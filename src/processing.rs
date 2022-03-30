@@ -32,14 +32,25 @@ impl LinkProcessor {
         })
     }
 
-    fn process_url<'a>(&self, original_url: &'a str) -> Result<Cow<'a, str>, Box<dyn Error>> {
-        let url = original_url.replace("\\/", "/");
+    fn process_url<'a>(&self, url: &'a str) -> Result<Cow<'a, str>, Box<dyn Error>> {
+        let url = url.replace("\\/", "/");
         let mut url = url::Url::from_str(&url)?;
         // Discard query string/fragment since we really don't need it for content
         url.set_fragment(None);
         let request_url = url.clone();
         url.set_query(None);
         let url = url;
+        let filename = self.create_filename(&url);
+        if let Some(mut file) = LinkProcessor::try_create_file(&filename)? {
+            let content = self.client.get(request_url).send()?.bytes()?;
+            file.write_all(&content)?;
+        }
+        let fragment = urlencoding::encode(url.as_str());
+        let filename = filename.replace('/', "\\/");
+        Ok(Cow::Owned(format!("\"{}#{}\"", filename, fragment)))
+    }
+
+    fn create_filename(&self, url: &url::Url) -> String {
         let mut digest = self.digest.borrow_mut();
         digest.reset();
         digest.input_str(url.as_str());
@@ -52,23 +63,20 @@ impl LinkProcessor {
                 filename.push_str(&extension.to_string_lossy());
             }
         }
-        fs::create_dir_all(Path::new(&filename).parent().unwrap())?;
+        filename
+    }
+
+    fn try_create_file(filename: &str) -> Result<Option<fs::File>, std::io::Error> {
+        fs::create_dir_all(Path::new(filename).parent().unwrap())?;
         match OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(&filename)
+            .open(filename)
         {
-            Ok(mut file) => {
-                let content = self.client.get(request_url).send()?.bytes()?;
-                file.write_all(&content)?;
-                Ok(())
-            }
-            Err(err) if err.raw_os_error() == Some(80) => Ok(()),
+            Ok(file) => Ok(Some(file)),
+            Err(err) if err.raw_os_error() == Some(80) => Ok(None),
             Err(err) => Err(err),
-        }?;
-        let fragment = urlencoding::encode(url.as_str());
-        let filename = filename.replace('/', "\\/");
-        Ok(Cow::Owned(format!("\"{}#{}\"", filename, fragment)))
+        }
     }
 }
 
