@@ -64,7 +64,6 @@ impl LinkProcessor {
                 Ok(())
             }
             Err(err) if err.raw_os_error() == Some(80) => Ok(()),
-            Err(err) if err.raw_os_error() == Some(123) => panic!("{}", filename),
             Err(err) => Err(err),
         }?;
         let fragment = urlencoding::encode(url.as_str());
