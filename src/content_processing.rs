@@ -1,10 +1,11 @@
 use std::{
     borrow::Cow,
+    error::Error,
     io::{BufRead, BufReader, LineWriter, Read, Write},
 };
 
 pub(crate) trait LineProcessor {
-    fn process<'a>(&self, text: &'a str) -> Result<Cow<'a, str>, Box<dyn std::error::Error>>;
+    fn process<'a>(&self, text: &'a str) -> Result<Cow<'a, str>, Box<dyn Error>>;
 }
 
 pub(crate) struct ContentProcessor<'a> {
@@ -16,7 +17,7 @@ impl<'a> ContentProcessor<'a> {
         &self,
         input: &mut R,
         output: &mut W,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         let mut output = LineWriter::new(output);
         for line in BufReader::new(input).lines() {
             let line = line?;

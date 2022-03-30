@@ -74,7 +74,7 @@ impl LinkProcessor {
 }
 
 impl LineProcessor for LinkProcessor {
-    fn process<'a>(&self, text: &'a str) -> Result<Cow<'a, str>, Box<dyn std::error::Error>> {
+    fn process<'a>(&self, text: &'a str) -> Result<Cow<'a, str>, Box<dyn Error>> {
         let mut captures_iter = self.filter.captures_iter(text);
         if let Some(mut captures) = captures_iter.next() {
             let mut result = String::new();
