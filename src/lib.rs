@@ -1,3 +1,4 @@
+mod content_processing;
 mod fs_tools;
 mod processing;
 
@@ -7,11 +8,12 @@ use std::{
     fs::{File, OpenOptions},
 };
 
+use content_processing::ContentProcessor;
 use fs_tools::FileIterator;
-use processing::{FileProcessor, LinkProcessor};
+use processing::LinkProcessor;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
-    let processor = FileProcessor {
+    let processor = ContentProcessor {
         line_processor: &LinkProcessor::new()?,
     };
     let json_extension = OsStr::new("json");
